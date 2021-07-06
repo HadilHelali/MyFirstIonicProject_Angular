@@ -37,18 +37,19 @@ export class PhotoService {
       source: CameraSource.Camera, // automatically take a new photo with the camera
       quality: 100 // highest quality (0 to 100)
     });
+
     /********************* Saving the photos ****************************/
       // Save the picture and add it to photo collection
     const savedImageFile = await this.savePicture(capturedPhoto);
     this.photos.unshift(savedImageFile);
     /********************* Displaying Photos ****************************/
     // we're returning a photo according to the photo interface that we've created
-    this.photos.unshift({
-      filepath: 'soon...',
-      webviewPath: capturedPhoto.webPath
-    });
+   // this.photos.unshift({
+    //  filepath: 'soon...',
+    //  webviewPath: capturedPhoto.webPath
+   // });
     /********************* Loading Photos from the Filesystem **********/
-    await Storage.set({
+    Storage.set({
       key: this.PHOTO_STORAGE,
       value: JSON.stringify(this.photos)
     });
@@ -64,6 +65,7 @@ export class PhotoService {
     reader.readAsDataURL(blob);
   });
   /************************* Adding Mobile ****************************/
+
   /* First, we’ll update the photo saving functionality to support mobile. In the
   readAsBase64() function, check which platform the app is running on. If it’s “hybrid”
   (Capacitor or Cordova, two native runtimes), then read the photo file into base64 format
@@ -79,8 +81,7 @@ export class PhotoService {
       });
 
       return file.data;
-    }
-    else {
+    } else {
       // Fetch the photo, read as a blob, then convert to base64 format
       const response = await fetch(cameraPhoto.webPath);
       const blob = await response.blob();
@@ -88,6 +89,7 @@ export class PhotoService {
       return await this.convertBlobToBase64(blob) as string;
     }
   }
+
   // Adding Mobile : Next, update the savePicture() method. When running on mobile,
   // set filepath to the result of the writeFile() operation - savedFile.uri. When
   // setting the webviewPath, use the special Capacitor.convertFileSrc() method (details here).
@@ -112,8 +114,7 @@ export class PhotoService {
         filepath: savedFile.uri,
         webviewPath: Capacitor.convertFileSrc(savedFile.uri),
       };
-    }
-    else {
+    } else {
       // Use webPath to display the new image instead of base64 since it's
       // already loaded into memory
       return {
@@ -131,7 +132,7 @@ export class PhotoService {
 
   public async loadSaved() {
     // Retrieve cached photo array data
-    const photoList = await Storage.get({ key: this.PHOTO_STORAGE });
+    const photoList = await Storage.get({key: this.PHOTO_STORAGE});
     this.photos = JSON.parse(photoList.value) || [];
 
     // Easiest way to detect when running on the web:
@@ -150,7 +151,27 @@ export class PhotoService {
       }
     }
   }
+  /******************** Deleting Photos ********************************/
+  public async deletePicture(photo: Photo, position: number) {
+    // Remove this photo from the Photos reference data array
+    this.photos.splice(position, 1);
 
+    // Update photos array cache by overwriting the existing photo array
+    Storage.set({
+      key: this.PHOTO_STORAGE,
+      value: JSON.stringify(this.photos)
+    });
+
+    // delete photo file from filesystem
+    const filename = photo.filepath
+      .substr(photo.filepath.lastIndexOf('/') + 1);
+
+    await Filesystem.deleteFile({
+      path: filename,
+      directory: Directory.Data
+    });
+  }
+}
 /************************* Displaying Photos ***************************/
 export interface Photo {
   filepath: string;

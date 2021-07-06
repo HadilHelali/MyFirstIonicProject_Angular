@@ -14,7 +14,9 @@
         size="6"
         *ngFor="let photo of photoService.photos; index as position"
       > <!-- for : iterating in the array of photos provided by the service -->
-        <ion-img [src]="photo.webviewPath"></ion-img>
+        <ion-img [src]="photo.webviewPath"
+                 (click)="showActionSheet(photo, position)"></ion-img>
+        <!-- showActionSheet for delete !! -->
       </ion-col>
     </ion-row>
   </ion-grid>
